@@ -59,7 +59,8 @@ var _this = (module.exports = {
         Data.eventName != "userSubscription" &&
         Data.eventName != "search" &&
         Data.eventName != "updateUser" && 
-        Data.eventName != "runInstagramFollowersSchedule"
+        Data.eventName != "runInstagramFollowersSchedule" &&
+        Data.eventName != "deleteUser"
       ) {
         response.end(
           ConstantMethod.Error("You need to send the authorization token")
