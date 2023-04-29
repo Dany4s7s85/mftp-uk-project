@@ -58,7 +58,8 @@ var _this = (module.exports = {
         Data.token == null &&
         Data.eventName != "userSubscription" &&
         Data.eventName != "search" &&
-        Data.eventName != "updateUser"
+        Data.eventName != "updateUser" && 
+        Data.eventName != "runInstagramFollowersSchedule"
       ) {
         response.end(
           ConstantMethod.Error("You need to send the authorization token")
@@ -68,6 +69,8 @@ var _this = (module.exports = {
       } else {
         var userData =
           Data.token == null ? "" : await verifyAuthToken(Data.token);
+
+        console.log(userData);
         switch (Data.eventName) {
           case "userRegistration":
             delete Data["eventName"];
@@ -80,6 +83,7 @@ var _this = (module.exports = {
                   Data.subscription = 0;
                   Data.firebaseToken = "";
                   Data.instagramUser = "";
+                  Data.usedInstaTime = "";
                   Data.createdAt = ISODateString(new Date());
                   constant.MongoDb.user.updateOne(
                     { _id: Data.deviceID },
@@ -124,6 +128,16 @@ var _this = (module.exports = {
 
             response.end(JSON.stringify(res));
             break;
+          case "deleteUser":
+            delete Data["eventName"];
+            await constant.MongoDb.user.deleteOne({deviceID: Data.deviceID});
+            var res = await constant.MongoDb.user
+            .find({ userName: { $regex: Data["query"], $options: "i" } })
+            .toArray();
+            console.log(res);
+
+            response.end(JSON.stringify(res));
+            break;
           case "updateUser":
             delete Data["eventName"];
             await constant.MongoDb.user.updateOne(
@@ -142,14 +156,14 @@ var _this = (module.exports = {
             delete Data["eventName"];
 
             constant.MongoDb.user.findOne(
-              { _id: userData.deviceID },
+              { deviceID: userData.deviceID },
               async function (err, res) {
                 if (err || res == null) {
                   response.end(ConstantMethod.Invalid());
                   return;
                 }
                 await constant.MongoDb.user.updateOne(
-                  { _id: res.deviceID },
+                  { deviceID: res.deviceID },
                   { $set: { firebaseToken: Data.firebaseToken } }
                 );
 
@@ -169,28 +183,29 @@ var _this = (module.exports = {
             var followers = await runPy.runBash();
             console.log(followers);
             constant.MongoDb.user.findOne(
-              { _id: userData.deviceID },
+              { deviceID: userData.deviceID },
               async function (err, res) {
                 if (err || res == null) {
                   response.end(ConstantMethod.Invalid());
                   return;
                 }
+                console.log(res);
                 await constant.MongoDb.user.updateOne(
-                  { _id: res.deviceID },
+                  { deviceID: res.deviceID },
                   {
                     $set: {
                       instagramUser: Data.instagramUser,
                       freetime: followers.includes(Data.instagramUser) ? 1 : 0,
-                      usedInstaTime: followers.includes(user.instagramUser)
-                          ? new Date().toISOString()
-                          : '',
+                      usedInstaTime: followers.includes(Data.instagramUser)
+                        ? new Date().toISOString()
+                        : "",
                     },
                   }
                 );
                 response.end(
                   ConstantMethod.sucess(
                     JSON.stringify({
-                      message: "instagram user added successfully!",
+                      message: followers.includes(Data.instagramUser) ? "instagram user added successfully and changed freetime to 1!" : "instagram user added but is not following the page",
                     }),
                     200
                   )
@@ -200,24 +215,24 @@ var _this = (module.exports = {
             break;
           case "runInstagramFollowersSchedule":
             delete Data["eventName"];
-            var followers = await runPy.runBash();
-            console.log(followers);
+
             constant.MongoDb.user
               .find({
                 instagramUser: { $exists: true },
                 freetime: 0,
-                usedInstaTime: {$exists: true},
+                usedInstaTime: "",
               })
               .toArray(async function (err, res) {
                 if (err || res == null) {
                   response.end(ConstantMethod.Invalid());
                   return;
                 }
-
+                var followers = await runPy.runBash();
+                console.log(followers);
                 for (let i = 0; i < res.length; i++) {
                   const user = res[i];
                   constant.MongoDb.user.updateOne(
-                    { _id: user.deviceID },
+                    { deviceID: user.deviceID },
                     {
                       $set: {
                         freetime: followers.includes(user.instagramUser)
@@ -225,7 +240,7 @@ var _this = (module.exports = {
                           : 0,
                         usedInstaTime: followers.includes(user.instagramUser)
                           ? new Date().toISOString()
-                          : '',
+                          : "",
                       },
                     }
                   );
@@ -243,7 +258,7 @@ var _this = (module.exports = {
           case "sendNotification":
             delete Data["eventName"];
             constant.MongoDb.user.findOne(
-              { _id: userData.deviceID },
+              { deviceID: userData.deviceID },
               async function (err, res) {
                 if (err || res == null) {
                   response.end(ConstantMethod.Invalid());
@@ -286,7 +301,7 @@ var _this = (module.exports = {
             delete Data["eventName"];
             constant.MongoDb.friend
               .aggregate([
-                { $match: { _id: userData.deviceID } },
+                { $match: { deviceID: userData.deviceID } },
                 { $unwind: "$accept" },
                 {
                   $lookup: {
@@ -322,7 +337,7 @@ var _this = (module.exports = {
               function (err, res) {
                 if (!err && res != null) {
                   constant.MongoDb.friend.updateOne(
-                    { _id: res.deviceID },
+                    { deviceID: res.deviceID },
                     {
                       $pull: {
                         receive: { $in: [userData.deviceID] },
@@ -346,7 +361,7 @@ var _this = (module.exports = {
               let batch = constant.MongoDb.friend.initializeUnorderedBulkOp({
                 useLegacyOps: true,
               });
-              batch.find({ _id: userData.deviceID }).update(
+              batch.find({ deviceID: userData.deviceID }).update(
                 {
                   $pull: {
                     receive: { $in: [Data.senderDeviceID] },
@@ -355,7 +370,7 @@ var _this = (module.exports = {
                 },
                 { multi: true }
               );
-              batch.find({ _id: Data.senderDeviceID }).update(
+              batch.find({ deviceID: Data.senderDeviceID }).update(
                 {
                   $pull: {
                     receive: { $in: [userData.deviceID] },
@@ -367,7 +382,7 @@ var _this = (module.exports = {
               batch.execute(function (err, batchRes) {
                 response.end(ConstantMethod.sucessWithCode(5)); //JSON.stringify("Connection removed."),
                 constant.MongoDb.user.findOne(
-                  { _id: Data.senderDeviceID },
+                  { deviceID: Data.senderDeviceID },
                   function (err, res) {
                     if (!err && res != null && res.hasOwnProperty("socketId"))
                       constant.io.to(res.socketId).emit("signalClient", {
@@ -410,13 +425,13 @@ var _this = (module.exports = {
                   } else {
                     constant.MongoDb.friend.findOne(
                       {
-                        _id: userData.deviceID,
+                        deviceID: userData.deviceID,
                         receive: { $in: [Data.senderDeviceID] },
                       },
                       function (err, result) {
                         if (!err && result != null) {
                           constant.MongoDb.user.findOne(
-                            { _id: Data.senderDeviceID },
+                            { deviceID: Data.senderDeviceID },
                             function (err, result) {
                               if (!err && result != null) {
                                 let batch =
@@ -432,14 +447,14 @@ var _this = (module.exports = {
                                   { multi: true }
                                 );
                                 batch
-                                  .find({ _id: userData.deviceID })
+                                  .find({ deviceID: userData.deviceID })
                                   .upsert()
                                   .updateOne({
                                     $set: { userType: 2 },
                                     $addToSet: { accept: Data.senderDeviceID },
                                   });
                                 batch
-                                  .find({ _id: Data.senderDeviceID })
+                                  .find({ deviceID: Data.senderDeviceID })
                                   .upsert()
                                   .updateOne({
                                     $set: { userType: 1 },
@@ -475,7 +490,7 @@ var _this = (module.exports = {
             delete Data["eventName"];
             constant.MongoDb.friend
               .aggregate([
-                { $match: { _id: userData.deviceID } },
+                { $match: { deviceID: userData.deviceID } },
                 { $unwind: "$receive" },
                 {
                   $lookup: {
@@ -503,18 +518,20 @@ var _this = (module.exports = {
                 }
               });
             break;
-          case "userSubscription":
-            delete Data["eventName"];
+            case "userSubscription":
+              delete Data["eventName"];
             constant.MongoDb.user.findOne(
-              { _id: userData.deviceID },
+              { deviceID: userData.deviceID },
               async function (err, res) {
                 if (err || res == null) {
+                  console.log(res);
+                  console.log(err);
                   response.end(ConstantMethod.Invalid());
                   return;
                 }
 
                 await constant.MongoDb.user.updateOne(
-                  { _id: res.deviceID },
+                  { deviceID: res.deviceID },
                   { $set: { subscription: Data.subscription } }
                 );
                 response.end(
@@ -541,6 +558,8 @@ var _this = (module.exports = {
             break;
           case "sendFriendRequest":
             delete Data["eventName"];
+
+            var sender = await constant.MongoDb.user.findOne({deviceID: userData.deviceID})
             constant.MongoDb.user.findOne(
               { userName: Data.userName },
               function (err, res) {
@@ -549,9 +568,25 @@ var _this = (module.exports = {
                     response.end(ConstantMethod.sucessWithCode(8)); //JSON.stringify("you can't send request to your self!!"),
                     return;
                   }
+
+                  admin
+                  .messaging()
+                  .sendToDevice(
+                    res.firebaseToken,
+                    {
+                      notification: {
+                        title: 'Gelemis',
+                        body:"⚡ " + sender.userName + ' wants to connect you ⚡',
+                      },
+                    },
+                    {
+                      priority: "high",
+                      timeToLive: 60 * 60 * 24,
+                    }
+                  )
                   constant.MongoDb.friend.findOne(
                     {
-                      _id: userData.deviceID,
+                      deviceID: userData.deviceID,
                       receive: { $in: [res.deviceID] },
                     },
                     function (err, result) {
@@ -567,14 +602,14 @@ var _this = (module.exports = {
                             { multi: true }
                           );
                         batch
-                          .find({ _id: userData.deviceID })
+                          .find({ deviceID: userData.deviceID })
                           .upsert()
                           .updateOne({
                             $set: { userType: 1 },
                             $addToSet: { accept: res.deviceID },
                           });
                         batch
-                          .find({ _id: res.deviceID })
+                          .find({ deviceID: res.deviceID })
                           .upsert()
                           .updateOne({
                             $set: { userType: 2 },
@@ -589,7 +624,7 @@ var _this = (module.exports = {
                         });
                       } else {
                         constant.MongoDb.friend.updateOne(
-                          { _id: res.deviceID },
+                          { deviceId: res.deviceID },
                           { $addToSet: { receive: userData.deviceID } },
                           { upsert: true },
                           function (err, result) {

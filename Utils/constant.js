@@ -69,7 +69,7 @@ function DbConnect() {
         }
       });
       subscriptionJob.start();
-      var freeTimeJob = new CronJob("*/1 * * * *", async function () {
+      var freeTimeJob = new CronJob("*/30 * * * *", async function () {
         var users = await MongoDb.user.find({ subscription: 0 }).toArray();
 
         for (let i = 0; i < users.length; i++) {
@@ -78,11 +78,9 @@ function DbConnect() {
           var now = moment(new Date().toISOString());
           var end = moment(user.createdAt);
 
-          var instaUsedTime = moment(user.instaUsedTime ?? user.createdAt);
+          var usedInstaTime = moment(user.usedInstaTime == '' ?  user.createdAt : user.usedInstaTime);
 
-          console.log("CreatedAt: " + end)
-          console.log("Insta Time: " + instaUsedTime)
-          if (moment.duration(now.diff(end)).asHours() >= 6  && moment.duration(now.diff(instaUsedTime)).asHours() >= 6) {
+          if (moment.duration(now.diff(end)).asHours() >= 6  && moment.duration(now.diff(usedInstaTime)).asHours() >= 6) {
             await MongoDb.user.updateOne({ _id: user._id }, {$set: {freetime: 0}});
           }
         }

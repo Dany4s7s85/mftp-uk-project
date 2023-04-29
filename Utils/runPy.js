@@ -13,8 +13,10 @@ await exec('./Utils/python-instagram-scraper/run.sh');
 // console.log('stderr:', stderr);
 
 var file = fs.readFileSync('./followers.txt','utf-8')
+var fileArray = file.split("\n")
+fileArray.pop();
 
-resolve(file.split("\n"))
+resolve(fileArray)
 
 })
 }
