@@ -7,10 +7,10 @@ const fs = require("fs")
 
 exports.runBash = async function () {
 return new Promise(async (resolve, reject)=> {
-await exec('./Utils/python-instagram-scraper/run.sh');
+const {stdout, stderr} = await exec('./Utils/python-instagram-scraper/run.sh');
 // const {stdout, stderr} = await exec('ls $PWD');
-// console.log('stdout:', stdout);
-// console.log('stderr:', stderr);
+console.log('stdout:', stdout);
+console.log('stderr:', stderr);
 
 var file = fs.readFileSync('./followers.txt','utf-8')
 var fileArray = file.split("\n")

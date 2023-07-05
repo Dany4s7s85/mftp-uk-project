@@ -11,9 +11,13 @@ class InstagramScraper:
         self.followers_list = []
 
     def create_session(self):
-
+        
         L = instaloader.Instaloader()
-        L.login(self.username, self.password) # Login or load session
+        try:
+            L.load_session_from_file(self.username, self.username + self.password)
+        except:
+            L.login(self.username, self.password) # Login or load session
+            L.save_session_to_file(self.username + self.password)
         self.profile = instaloader.Profile.from_username(L.context, 'gelemisvillage') # Obtain profile metadata
 
     def scrape_followers(self):
