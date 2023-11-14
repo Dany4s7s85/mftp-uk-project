@@ -78,16 +78,16 @@ function DbConnect() {
           var now = moment(new Date().toISOString());
           var end = moment(user.createdAt);
 
-          var usedInstaTime = moment(user.usedInstaTime == '' ?  user.createdAt : user.usedInstaTime);
+          var usedInstaTime = moment(user.usedInstaTime == '' ? user.createdAt : user.usedInstaTime);
 
-          if (moment.duration(now.diff(end)).asHours() >= 6  && moment.duration(now.diff(usedInstaTime)).asHours() >= 6) {
-            await MongoDb.user.updateOne({ _id: user._id }, {$set: {freetime: 0}});
+          if (moment.duration(now.diff(end)).asHours() >= 6 && moment.duration(now.diff(usedInstaTime)).asHours() >= 6) {
+            await MongoDb.user.updateOne({ _id: user._id }, { $set: { freetime: 0 } });
           }
         }
       });
       freeTimeJob.start();
 
-  
+
       dbconnection.on("close", function () {
         console.log("Close + ");
       });
