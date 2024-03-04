@@ -58,14 +58,13 @@ var _this = (module.exports = {
         Data.token == null &&
         Data.eventName != "userSubscription" &&
         Data.eventName != "search" &&
-        Data.eventName != "updateUser" && 
+        Data.eventName != "updateUser" &&
         Data.eventName != "runInstagramFollowersSchedule" &&
         Data.eventName != "deleteUser"
       ) {
         response.end(
           ConstantMethod.Error("You need to send the authorization token")
         );
-
         return;
       } else {
         var userData =
@@ -106,7 +105,6 @@ var _this = (module.exports = {
             constant.MongoDb.user.findOne(
               { _id: Data.deviceID },
               async function (err, res) {
-                console.log(res);
                 if (res != null) {
                   var token = await generateAccessToken({
                     deviceID: Data.deviceID,
@@ -132,10 +130,10 @@ var _this = (module.exports = {
             break;
           case "deleteUser":
             delete Data["eventName"];
-            await constant.MongoDb.user.deleteOne({deviceID: Data.deviceID});
+            await constant.MongoDb.user.deleteOne({ deviceID: Data.deviceID });
             var res = await constant.MongoDb.user
-            .find({ userName: { $regex: Data["query"], $options: "i" } })
-            .toArray();
+              .find({ userName: { $regex: Data["query"], $options: "i" } })
+              .toArray();
             console.log(res);
 
             response.end(JSON.stringify(res));
@@ -204,32 +202,32 @@ var _this = (module.exports = {
                     },
                   }
                 );
-                if(followers.includes(Data.instagramUser)){
+                if (followers.includes(Data.instagramUser)) {
                   try {
-                  admin
-                  .messaging()
-                  .sendToDevice(
-                    res.firebaseToken,
-                    {
-                      notification: {
-                        title: "🎁 Free time is ready 🎁",
-                        body: 'Thanks for your following',
-                      },
-                    },
-                    {
-                      priority: "high",
-                      timeToLive: 60 * 60 * 24,
-                    }
-                  )
-                  .then(function (response) {
-                    console.log("Successfully sent message:", response.results);
-                  })
-                  .catch(function (error) {
-                    console.log("Error sending message:", error);
-                  });
-                } catch(e){
-                  console.log(e)
-                }
+                    admin
+                      .messaging()
+                      .sendToDevice(
+                        res.firebaseToken,
+                        {
+                          notification: {
+                            title: "🎁 Free time is ready 🎁",
+                            body: 'Thanks for your following',
+                          },
+                        },
+                        {
+                          priority: "high",
+                          timeToLive: 60 * 60 * 24,
+                        }
+                      )
+                      .then(function (response) {
+                        console.log("Successfully sent message:", response.results);
+                      })
+                      .catch(function (error) {
+                        console.log("Error sending message:", error);
+                      });
+                  } catch (e) {
+                    console.log(e)
+                  }
                 }
                 response.end(
                   ConstantMethod.sucess(
@@ -260,32 +258,32 @@ var _this = (module.exports = {
                 console.log(followers);
                 for (let i = 0; i < res.length; i++) {
                   const user = res[i];
-                  if(followers.includes(user.instagramUser)){
+                  if (followers.includes(user.instagramUser)) {
                     try {
                       admin
-                    .messaging()
-                    .sendToDevice(
-                      user.firebaseToken,
-                      {
-                        notification: {
-                          title: "🎁 Free time is ready 🎁",
-                          body: 'Thanks for your following',
-                        },
-                      },
-                      {
-                        priority: "high",
-                        timeToLive: 60 * 60 * 24,
-                      }
-                    )
-                    .then(function (response) {
-                      console.log("Successfully sent message:", response.results);
-                    })
-                    .catch(function (error) {
-                      console.log("Error sending message:", error);
-                    });
-                  } catch(e){
-                    console.log(e)
-                  }
+                        .messaging()
+                        .sendToDevice(
+                          user.firebaseToken,
+                          {
+                            notification: {
+                              title: "🎁 Free time is ready 🎁",
+                              body: 'Thanks for your following',
+                            },
+                          },
+                          {
+                            priority: "high",
+                            timeToLive: 60 * 60 * 24,
+                          }
+                        )
+                        .then(function (response) {
+                          console.log("Successfully sent message:", response.results);
+                        })
+                        .catch(function (error) {
+                          console.log("Error sending message:", error);
+                        });
+                    } catch (e) {
+                      console.log(e)
+                    }
                   }
                   constant.MongoDb.user.updateOne(
                     { deviceID: user.deviceID },
@@ -575,8 +573,8 @@ var _this = (module.exports = {
                 }
               });
             break;
-            case "userSubscription":
-              delete Data["eventName"];
+          case "userSubscription":
+            delete Data["eventName"];
             constant.MongoDb.user.findOne(
               { deviceID: userData.deviceID },
               async function (err, res) {
@@ -616,7 +614,7 @@ var _this = (module.exports = {
           case "sendFriendRequest":
             delete Data["eventName"];
 
-            var sender = await constant.MongoDb.user.findOne({deviceID: userData.deviceID})
+            var sender = await constant.MongoDb.user.findOne({ deviceID: userData.deviceID })
             constant.MongoDb.user.findOne(
               { userName: Data.userName },
               function (err, res) {
@@ -627,20 +625,20 @@ var _this = (module.exports = {
                   }
 
                   admin
-                  .messaging()
-                  .sendToDevice(
-                    res.firebaseToken,
-                    {
-                      notification: {
-                        title: 'Gelemis',
-                        body:"⚡ " + sender.userName + ' wants to connect you ⚡',
+                    .messaging()
+                    .sendToDevice(
+                      res.firebaseToken,
+                      {
+                        notification: {
+                          title: 'Gelemis',
+                          body: "⚡ " + sender.userName + ' wants to connect you ⚡',
+                        },
                       },
-                    },
-                    {
-                      priority: "high",
-                      timeToLive: 60 * 60 * 24,
-                    }
-                  )
+                      {
+                        priority: "high",
+                        timeToLive: 60 * 60 * 24,
+                      }
+                    )
                   constant.MongoDb.friend.findOne(
                     {
                       _id: userData.deviceID,

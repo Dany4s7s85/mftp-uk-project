@@ -31,7 +31,9 @@ let credentials = {
 };
 // let io = require("socket.io")(https.createServer(credentials, app).listen(2054));
 //todo Change port here
-let io = require("socket.io")(require("http").createServer(app).listen(2054));
+let io = require("socket.io")(require("http").createServer(app).listen(2054, () => {
+  console.log('running port 2054')
+}));
 function CurrentTimeStamp() {
   return new Date().toISOString().replace(/T/, " ").replace(/\..+/, "");
 }
